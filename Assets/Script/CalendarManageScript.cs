@@ -15,15 +15,17 @@ public class CalendarManageScript : MonoBehaviour
     public Transform gridCalendar;
     public Button previousMonth;
     public Button nextMonth;
+
     public TextMeshProUGUI spendingTotalMonthText;
     public TextMeshProUGUI revenueTotalMonthText;
     public TextMeshProUGUI totalExpenseText;
+
+    public BaseDaycellAnalysesSpending baseDaycellAnalysesSpending;
 
     private DateTime currentDate; //ngày hiển thị 
     private float totalSpendingOfMonth = 0;
     private float totalRevenueOfMonth = 0;
     private float totalExpense = 0;
-    private String CurrentMonth;
     private List<String> ListCategorySpendingName = new List<String>();
     private List<String> ListCategoryRevenueName = new List<String>();
 
@@ -36,8 +38,9 @@ public class CalendarManageScript : MonoBehaviour
 
         previousMonth.onClick.AddListener(PreviousMonth);
         nextMonth.onClick.AddListener(NextMonth);
-        
-        CurrentMonth = currentDate.ToString("MM-yyyy");
+        baseDaycellAnalysesSpending.SetDate(currentDate);
+        baseDaycellAnalysesSpending.UpdateReportPerDay();
+
     }
 
     // Update is called once per frame
@@ -59,6 +62,7 @@ public class CalendarManageScript : MonoBehaviour
         }
 
         UpdateTextExpenseOfMonth(currentDate.Month, currentDate.Year);
+
     }
     private void GenerateCalendar()
     {
@@ -75,7 +79,7 @@ public class CalendarManageScript : MonoBehaviour
         DateTime previousMonth = firstDay.AddDays(-startDayOfWeek);
         for (int i = 0; i < startDayOfWeek; i++)
         {
-            CreateDayCell(previousMonth.Day, false);
+            CreateDayCell(previousMonth, false);
             previousMonth = previousMonth.AddDays(1);
         }
 
@@ -84,10 +88,10 @@ public class CalendarManageScript : MonoBehaviour
         DateTime today = System.DateTime.Now;
         for (int day = 1; day <= totalDayInMonth; day++)
         {
-            GameObject obj = CreateDayCell(day, true);
+            DateTime date = new DateTime(currentDate.Year, currentDate.Month, day);
+            GameObject obj = CreateDayCell(date, true);
 
             int weekendDay = (startDayOfWeek + day - 1) % 7;
-            TMP_Text dayText = obj.transform.Find("DayNumber").GetComponent<TMP_Text>();
             if (weekendDay == 6)
             {
                 obj.transform.Find("DayNumber").GetComponent<TextMeshProUGUI>().color = Color.blue;
@@ -101,23 +105,24 @@ public class CalendarManageScript : MonoBehaviour
                 Image dayBackground = obj.transform.Find("DayBackground").GetComponent<Image>();
                 dayBackground.color = Color.green;
             }
-
         }
         //get next month 
         int totalCell = 42;
         DateTime nextMonth = new DateTime(currentDate.Year, currentDate.Month, 1).AddMonths(1);
         for (int i = 0; i < totalCell - totalDayInMonth - startDayOfWeek; i++)
         {
-            CreateDayCell(nextMonth.Day, false);
+            CreateDayCell(nextMonth, false);
             nextMonth = nextMonth.AddDays(1);
         }
+        baseDaycellAnalysesSpending.SetDate(currentDate);
+        baseDaycellAnalysesSpending.UpdateReportPerDay();
     }
 
-    private GameObject CreateDayCell(int day, bool isCurrentDay)
+    private GameObject CreateDayCell(DateTime date, bool isCurrentDay)
     {
         GameObject dayCell = Instantiate(dayCellPrefabs, gridCalendar);
         TextMeshProUGUI dayText = dayCell.transform.Find("DayNumber").GetComponent<TextMeshProUGUI>();
-        dayText.text = day.ToString();
+        dayText.text = date.Day.ToString();
         Image dayBackground = dayCell.transform.Find("DayBackground").GetComponent<Image>();
 
         if (!isCurrentDay)
@@ -127,7 +132,6 @@ public class CalendarManageScript : MonoBehaviour
         }
         return dayCell;
     }
-
     public void NextMonth()
     {
         updateMonth();
@@ -143,7 +147,6 @@ public class CalendarManageScript : MonoBehaviour
         currentDate = currentDate.AddMonths(-1);
         GenerateCalendar();
         UpdateTextExpenseOfMonth(currentDate.Month, currentDate.Year);
-
     }
 
     public void updateMonth()
@@ -173,8 +176,11 @@ public class CalendarManageScript : MonoBehaviour
         {
             foreach (string tag in ListCategorySpendingName)
             {
-                String getSpendingCategoryOfMonth = tag + "-" + month.ToString("D2") + "-" + Year;
-                totalAmount += PlayerPrefs.GetFloat(getSpendingCategoryOfMonth, 0);
+                for (int day = 1;day <= DateTime.DaysInMonth(Year, month); day++)
+                {
+                    string key = $"{tag.Trim()}-{day:D2}-{month:D2}-{Year}";
+                    totalAmount += PlayerPrefs.GetFloat(key, 0);
+                }
             }
         }
         return totalAmount;
@@ -189,10 +195,17 @@ public class CalendarManageScript : MonoBehaviour
         {
             foreach (string tag in ListCategoryRevenueName)
             {
-                String getRevenueCategoryOfMonth = tag + "-" + month.ToString("D2") + "-" + Year;
-                totalAmount += PlayerPrefs.GetFloat(getRevenueCategoryOfMonth, 0);
+                for(int day = 1;day <= DateTime.DaysInMonth(Year, month); day++)
+                {
+                    string key = $"{tag.Trim()}-{day:D2}-{month:D2}-{Year}";
+                    totalAmount += PlayerPrefs.GetFloat(key, 0);
+                }
             }
         }
         return totalAmount;
+    }
+    public DateTime getCurrentDate()
+    {
+        return currentDate;
     }
 }

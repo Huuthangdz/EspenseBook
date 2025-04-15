@@ -2,23 +2,25 @@
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
-using UnityEditor.UI;
 using UnityEngine;
+using UnityEngine.Analytics;
 using UnityEngine.UI;
+
 
 public class InputData : MonoBehaviour
 {
     public TextMeshProUGUI nameCategory;
     public TMP_InputField moneyInput;
-    public String CurrentMonthText;
 
     public Button[] buttonsCategory;
     public Button submitButton;
-    public DateTime dateTime = System.DateTime.Now;
-    public List<String> ListNameCategorySpending = new List<string>();
-    public List<String> ListNameCategoryRevenue = new List<string>();
 
-    public String CurrentNameCategory;
+    public DateTime dateTime = System.DateTime.Now;
+    public List<string> ListNameCategorySpending = new List<string>();
+    public Dictionary<string, string> colorCategoriSpending = new Dictionary<string, string>();
+
+    public List<string> ListNameCategoryRevenue = new List<string>();
+    public Dictionary<string, string> colorCategoryRevenue = new Dictionary<string, string>();
 
     void Start()
     {
@@ -31,26 +33,16 @@ public class InputData : MonoBehaviour
 
         submitButton.onClick.AddListener(SubmitData);
 
-        CurrentMonthText = System.DateTime.Now.ToString("MM-yyyy");
-
     }
-    
     public virtual void SetDataCategory(Button button)
     {
         nameCategory.text = button.transform.Find("Name").GetComponent<TMP_Text>().text;
         PlayerPrefs.SetString("NameCategory", nameCategory.text); // save current category
-        CurrentNameCategory = PlayerPrefs.GetString("NameCategory", nameCategory.text);
     }
 
     public virtual void SubmitData()
     {
 
-        // thêm điều kiện nhập số tiền là 0
-        if (moneyInput.text == "")
-        {
-            Debug.Log("Please enter the money");
-            return;
-        }
     }
     public float SetTotalAmountSpendingOfMonth(int month, int year)
     {
@@ -60,8 +52,11 @@ public class InputData : MonoBehaviour
         {
             foreach (string tag in ListNameCategorySpending)
             {
-                String getSpendingCategoryOfMonth = tag + "-" + month.ToString("D2") + "-" + year;
-                totalAmount += PlayerPrefs.GetFloat(getSpendingCategoryOfMonth, 0);
+                for ( int day = 1;day <= DateTime.DaysInMonth(year,month);day++)
+                {
+                    string key = $"{tag.Trim()}-{day:D2}-{month:D2}-{year}";
+                    totalAmount += PlayerPrefs.GetFloat(key, 0);
+                }
             }
         }
         return totalAmount;
@@ -75,8 +70,11 @@ public class InputData : MonoBehaviour
         {
             foreach (string tag in ListNameCategoryRevenue)
             {
-                String getRevenueCategoryOfMonth = tag + "-" + month.ToString("D2") + "-" + year;
-                totalAmount += PlayerPrefs.GetFloat(getRevenueCategoryOfMonth, 0);
+                for (int day = 1; day <= DateTime.DaysInMonth(year, month); day++)
+                {
+                    string key = $"{tag.Trim()}-{day:D2}-{month:D2}-{year}";
+                    totalAmount += PlayerPrefs.GetFloat(key, 0);
+                }
             }
         }
         return totalAmount;
